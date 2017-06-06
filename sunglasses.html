@@ -67,17 +67,36 @@
             }
             //iframe the specified URL
             var q = readQueryString();
-            var i = document.createElement('iframe');
-            i.src = q.service;
-            i.allowfullscreen = true;
             var c = document.getElementById('content');
-            c.appendChild(i);
+            if (q.hasOwnProperty('url')) {
+                if (window.location.protocol == "https://" && (q.url.indexOf(window.location.protocol) <= -1)) {
+                    alert("If this doesn't work, try the http:// version of the rawgit site.");
+                    var url = top.location;
+                    url.protocol = "http://";
+                    top.location = url;
+                }
+                var i = document.createElement('iframe');
+                i.src = q.url;
+                i.allowfullscreen = true;
+                if (!c.appendChild(i)) {
+                    console.log("hmm");
+                }
 
-            var goFS = document.getElementById("goFS");
-            goFS.addEventListener("click", function () {
-                toggleFullScreen();
-                goFS.style.display = "none";
-            }, false);
+                var goFS = document.getElementById("goFS");
+                goFS.addEventListener("click", function () {
+                    toggleFullScreen();
+                    goFS.style.display = "none";
+                }, false);
+            } else {
+                c.innerHTML = "Please add '?url=' followed by a URL to the end"+
+                    " of the current URL." +
+                    " You may also specify the opacity. Opacity is how dark "+
+                    "your sunglasses "+
+                    " should be as a decimal number with 0.0 being "+
+                    " totally clear and 1.0 being completely black."
+                //eventually just put input fields here
+            }
+
             //set the desired opacity for the sunglasses
             if (q.hasOwnProperty('opacity'))
                 document.getElementById('sunglasses').style.opacity = q.opacity;
