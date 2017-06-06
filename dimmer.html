@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -6,18 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
     <style>
-        div body {
-            overflow:hidden;
-        }
         body {
+            overflow:hidden;
             margin-bottom: 0px;
             margin-top: 0px;
             margin-left: 0px;
             margin-right: 0px;
             height:100vh;
+            z-index:0;
         }
-        div#content{
+        #content{
             margin-bottom:-4px;
+            overflow:hidden;
+            z-index:0;
         }
         iframe {
             border-width: 0px;
@@ -26,83 +27,117 @@
             z-index:0;
         }
         #dimmer {
-          pointer-events: none;
-          position:absolute;
-          width:100vw;
-          height:100vh;
-          top:0px;
-          background:#000;
-          opacity: .5;
-          z-index:10;
+            pointer-events: none;
+            position:absolute;
+            width:100vw;
+            height:100vh;
+            top:0px;
+            background:#000;
+            opacity: 0.5;
+            z-index:10;
+            overflow:hidden;
         }
 
         #content:-webkit-full-screen {
-          width: 100%;
-          height: 100%;
-        }
-        #fullScreenDragContainer{
-            position:absolute;
-            top:10px;
-            left:10px;
-            opacity: 0.8;
-            z-index:11;
+            width: 100%;
+            height: 100%;
         }
 
-        /*https://stackoverflow.com/questions/13526712/make-div-draggable-using-css*/
-        [draggable=true] {
-            cursor: move;
-        }
-        /*.dragHandle {
-            background-image:url('https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg');
-            background-repeat:no-repeat;
-            background-position:left;
-        }*/
-        #sliderDragContainer {
-            position:absolute;
-            top:50px;
-            left:50px;
-            opacity: 0.8;
-            z-index:11;
-            /*width:50px;*/
+        /*https://stackoverflow.com/questions/15935837/how-to-display-a-range-input-slider-vertically*/
+        .vranger {
             transform: rotate(90deg);
             -moz-transform: rotate(90deg); /*do same for other browsers if required*/
         }
-        /*https://stackoverflow.com/questions/15935837/how-to-display-a-range-input-slider-vertically*/
-        /*.vranger {
-            transform: rotate(90deg);
-            -moz-transform: rotate(90deg); /*do same for other browsers if required
-            opacity: 0.8;
-        }*/
-        /*input[type="range"] {
-           position: absolute;
-           top: 40%;
-           transform: rotate(270deg);
-        }*/
         .center {
-            margin-top:50vh;
-            margin-left:50vw;
-        }
-        .horizontal{
-            /*display:inline;*/
-            display:block;
-            float:left;
+            top:50vh;
+            left:50vw;
         }
 
+        /*https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_sidenav_none*/
+        .sidenav {
+            display: none;
+            height: 100%;
+            position:absolute;
+            top: 0px;
+            left: 0px;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 60px;
+            z-index: 11;
+        }
+        .sidenav a {
+            /*padding: 8px 8px 8px 32px;*/
+            text-decoration: none;
+            /*font-size: 25px;*/
+            color: #818181;
+            display: block;
+        }
+        .sidenav a:hover, .offcanvas a:focus {
+            color: #f1f1f1;
+        }
+
+        .closebtn {
+            z-index: 11;
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            /*margin-left: 50px;*/
+        }
+
+        #menuIcon{
+            font-size:30px;
+            cursor:pointer;
+            top: 0px;
+            left: 0px;
+            z-index: 11;
+        }
+
+        #goFS, #dimmerSlider {
+            background-color: #818181;
+        }
+
+        closeMenu {
+            background-color: #999999;
+        }
+        input:invalid {
+            background-color:palevioletred;
+        }
+
+        @media screen and (max-height: 450px) {
+          .sidenav {padding-top: 15px;}
+          .sidenav a {font-size: 18px;}
+        }
     </style>
 </head>
 <body allowfullscreen>
+
+    <div id="mySidenav" class="sidenav">
+        <a id="closeMenu" href="javascript:void(0)" class="closebtn" >&times;</a>
+        <button id="goFS">fullscreen</button>
+        <input id="dimmerSlider" type="range" class="vranger" />
+    </div>
+    <span id="menuIcon">&#9776;</span>
     <div id="content" allowfullscreen></div>
     <div id="dimmer"></div>
-    <div draggable="true" id="fullScreenDragContainer">
-        <img class="horizontal" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg" />
-        <button class="horizontal" id="goFS">Go fullscreen</button>
-    </div>
-    <div draggable="true" id="sliderDragContainer">
-        <img class="horizontal" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg" />
-        <input class="horizontal" id="dimmerSlider" type="range" class="vranger" />
-    </div>
     <script>
         (function () {
+            //IE polyfill
+            if (typeof Element.prototype.addEventListener === 'undefined') {
+                Element.prototype.addEventListener = function (e, callback) {
+                    e = 'on' + e;
+                    return this.attachEvent(e, callback);
+                };
+            }
+
+            document.getElementById('menuIcon').addEventListener("click", function () {
+                document.getElementById("mySidenav").style.display = "block";
+            }, false);
+
+            document.getElementById('closeMenu').addEventListener("click", function () {
+                document.getElementById("mySidenav").style.display = "none";
+            }, false);
+
             function readQueryString() {
                 //Parse the GET string
                 var $_GET = {};
@@ -120,17 +155,28 @@
                 return $_GET;
             }
             //iframe the specified URL
+
+            //read settings parsed from the URL
             var q = readQueryString();
             var c = document.getElementById('content');
+            var urlInput = document.createElement('input');
+            urlInput.type = 'url';
+            var haveValidUrl = false;
             if (q.hasOwnProperty('url')) {
-                if (window.location.protocol == "https://" && (q.url.indexOf(window.location.protocol) <= -1)) {
+                urlInput.value = q.url;
+                haveValidUrl = urlInput.validity.valid;
+            }
+            if (haveValidUrl) {
+                urlInput.style.display = "none";
+                var framedUrl = q.url;
+                if (window.location.protocol == "https://" && (framedUrl.indexOf(window.location.protocol) <= -1)) {
                     alert("If this doesn't work, try the http:// version of the rawgit site.");
                     var url = top.location;
                     url.protocol = "http://";
                     top.location = url;
                 }
                 var i = document.createElement('iframe');
-                i.src = q.url;
+                i.src = framedUrl;
                 i.allowfullscreen = true;
                 if (!c.appendChild(i)) {
                     console.log("hmm");
@@ -138,87 +184,79 @@
 
                 var goFS = document.getElementById("goFS");
                 goFS.addEventListener("click", function () {
-                    toggleFullScreen();
-                    //goFS.style.display = "none";
+                    toggleFullScreen(goFS);
                 }, false);
             } else {
-                c.innerHTML = "Please add '?url=' followed by a URL to the end"+
-                    " of the current URL to view that URL with site-dimmer." +
-                    "<br>You may also specify how much you would like to dim the "+
-                    "screen as a percentage."+
-                    "<br>Add 'dim=60' to reduce the light level by 60%."
                 var form = document.createElement('form');
+                form.id = "form";
+                form.textContent = "Enter the URL of the page that you want to view."
                 form.method = "GET";
-                form.action = ".";
-                var urlInput = document.createElement('input');
+                urlInput.id = "urlInput";
+                urlInput.name = "url";
                 urlInput.type = 'url';
-                urlInput.class = "center";
+                urlInput.className = "center";
                 urlInput.placeholder = "Enter your URL here";
+                urlInput.tabIndex = 1;
                 form.appendChild(urlInput);
+                var opacityInput = document.createElement('input');
+                opacityInput.id = "opacityInput";
+                opacityInput.name = "dim";
+                opacityInput.value = (document.getElementById('dimmer').style.opacity)*100;
+                opacityInput.type = "hidden";
+                form.appendChild(opacityInput);
                 document.body.appendChild(form);
+                form.addEventListener('submit', function (ev) {
+                    //Fail the submit if the URL isn't valid
+                    console.log("submit fired")
+                    if (!urlInput.validity.valid) {
+                        ev.preventDefault();
+                        return false;
+                    }
+                    ev.target.elements['urlInput'] =
+                        encodeURIComponent(ev.target.elements['urlInput'].value);
+                }, false);
             }
-            //set the desired darkness for the dimmer
-            if (q.hasOwnProperty('dim'))
-                document.getElementById('dimmer').style.opacity = q.opacity / 100;
-
             //Make a floating, moveable, tiny vertical slider for opacity here.
-            var dimmerSlider = document.getElementById('dimmerSlider');
-            //Give it an intial value reflecting the current dim level
-            dimmerSlider.value = document.getElementById('dimmer').style.opacity * 100;
-            //Changing the dimmer level changes brightness
-            dimmerSlider.onchange = function () {
-                document.getElementById('dimmer').style.opacity = dimmerSlider.value / 100;
-            };
+            document.getElementById('dimmerSlider').onchange = (function (obj) {
+                //Change the dimmer opacity when the slider changes
 
-            function dragstart_handler(ev) {
-                // Set the drag effect to copy
-                ev.dataTransfer.dropEffect = "move";
+                //We only have a form (with opacityFormInput) if no valid URL
+                // was specified.
+                if (obj.opacityFormInput !== null) {
+                    return function (ev) {
+                        obj.dimmer.style.opacity = ev.target.value / 100;
+                        obj.opacityFormInput.value = ev.target.value;
+                    }
+                } else {
+                    return function (ev) {
+                        obj.dimmer.style.opacity = ev.target.value / 100;
+                    }
+                }
 
-                var style = window.getComputedStyle(event.currentTarget, null);
-                var dataToPass = JSON.stringify({
-                    left: parseInt(style.getPropertyValue("left"), 10) - event.clientX,
-                    top: parseInt(style.getPropertyValue("top"), 10) - event.clientY,
-                    id: event.currentTarget.id
-                });
-                // Add the drag data
-                event.dataTransfer.setData("text/json",dataToPass);
+            }({
+                dimmer: document.getElementById('dimmer'),
+                opacityFormInput: document.getElementById('opacityInput')
+            }));
+            //set the desired darkness for the dimmer
+            if (q.hasOwnProperty('dim')) {
+                //set the opacity on the dimmer div
+                document.getElementById('dimmer').style.opacity = q.dim / 100;
+                //Give the slider an intial value reflecting the current dim level
+                dimmerSlider.value = q.dim;
             }
 
-            function dragover_handler(ev) {
-                ev.preventDefault();
-                // Set the dropEffect to move
-                ev.dataTransfer.dropEffect = "move";
-            }
-            function drop_handler(ev) {
-                ev.preventDefault();
-                // Get the id of the target and add the moved element to the target's DOM
-                var data = JSON.parse(ev.dataTransfer.getData("text/json"));
-                dm = document.getElementById(data.id);
-                dm.style.left = (ev.clientX + parseInt(data.left, 10)) + 'px';
-                dm.style.top = (ev.clientY + parseInt(data.top, 10)) + 'px';
-                return false;
-            }
-            document.querySelectorAll('[draggable]').forEach(function (draggableEl) {
-                draggableEl.addEventListener('dragstart', dragstart_handler, false);
-            });
-            document.body.addEventListener('dragover', dragover_handler, false);
-            document.body.addEventListener('drop', drop_handler, false);
-            document.getElementById('dimmer').addEventListener('dragover', dragover_handler, false);
-            document.getElementById('dimmer').addEventListener('drop', drop_handler, false);
-            document.getElementById('content').addEventListener('dragover', dragover_handler, false);
-            //document.getElementById('content').addEventListener('drop', drop_handler, false);
-
-
-            function toggleFullScreen() {
+            function toggleFullScreen(btn) {
                 var doc = window.document;
                 var docEl = doc.documentElement;
                 var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
                 var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
                 if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
                     requestFullScreen.call(docEl);
+                    btn.textContent = "Exit fullscreen";
                 }
                 else {
                     cancelFullScreen.call(doc);
+                    btn.textContent = "fullscreen";
                 }
             }
             //file:///C:/Users/orbis.luminate/Documents/Visual%20Studio%202015/Projects/overdriveoverlay.html?service=https://ofs-60631275ab0144a6f227269b847f2406.read.overdrive.com/?p=ijC6_T7te24rY8z2iCRKbg
