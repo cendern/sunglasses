@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -103,10 +103,49 @@
         input:invalid {
             background-color:palevioletred;
         }
+        .errorMsg {
+            background-color:red;
+            -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
+            -moz-animation: fadein 2s; /* Firefox < 16 */
+            -ms-animation: fadein 2s; /* Internet Explorer */
+            -o-animation: fadein 2s; /* Opera < 12.1 */
+            animation: fadein 2s;
+            font-size:30px;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* Firefox < 16 */
+        @-moz-keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* Safari, Chrome and Opera > 12.1 */
+        @-webkit-keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* Internet Explorer */
+        @-ms-keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* Opera < 12.1 */
+        @-o-keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
 
         @media screen and (max-height: 450px) {
           .sidenav {padding-top: 15px;}
           .sidenav a {font-size: 18px;}
+          .errorMsg {font-size:18px;}
         }
     </style>
 </head>
@@ -178,9 +217,8 @@
                 var i = document.createElement('iframe');
                 i.src = framedUrl;
                 i.allowfullscreen = true;
-                if (!c.appendChild(i)) {
-                    console.log("hmm");
-                }
+                i.textContent = "Looks like this didn't load properly. Some sites don't allow themselves to be presented in an iframe which prevents website-dimmer from working.";
+                testIframe(i, c);
 
                 var goFS = document.getElementById("goFS");
                 goFS.addEventListener("click", function () {
@@ -259,6 +297,61 @@
                     btn.textContent = "fullscreen";
                 }
             }
+
+            //Guess whether iframe loaded or not.
+            function testIframe(iframe, appendTo) {
+                var timepast = false;
+                var errorElement = document.createElement('p');
+
+                // If more then 500ms past that means a page is loading inside the iFrame
+                setTimeout(function () {
+                    timepast = true;
+                    try { iframe.contentDocument; } catch (e) {
+                        //Chrome throws this error:
+                        //DOMException: Failed to read the 'contentDocument' property from 'HTMLIFrameElement': Blocked a frame with origin "null" from accessing a cross-origin frame.
+                        if (e.toString().indexOf("from accessing a cross-origin frame") > -1) {
+                            errorElement.style.zIndex = 11;
+                            errorElement.className = "errorMsg";
+                            errorElement.textContent = "Darn! Looks like this site may be using some settings that are incompatible with website-dimmer. (Likely set \"X-Frame-Options sameorigin\")";
+                            errorElement.appendChild(document.createElement('br'));
+                            var a = document.createElement('a');
+                            a.textContent = "Click here to visit " + q.url + " without site-dimmer";
+                            a.href = q.url;
+                            errorElement.appendChild(a);
+                            //append as first child
+                            var eElement = document.body;
+                            eElement.insertBefore(errorElement, eElement.firstChild);
+                        }
+                        console.log(e);
+                    }
+                }, 1000);
+
+                if (iframe.attachEvent) {
+                    iframe.attachEvent("onload", function () {
+                        if (timepast) {
+                            console.log("It's PROBABLY OK");
+                        }
+                        else {
+                            console.log("It's PROBABLY NOT OK");
+                            try { iframe.contentDocument; } catch (e) { console.log(e);}
+                        }
+                    });
+                }
+                else {
+                    iframe.onload = function () {
+                        //Chrome hits this one. I think the other one is for IE.
+                        if (timepast) {
+                            console.log("It's PROBABLY OK");
+                        }
+                        else {
+                            console.log("It's PROBABLY NOT OK");
+                            try { iframe.contentDocument; } catch (e) { console.log(e); }
+                        }
+                    };
+                }
+                appendTo.appendChild(iframe);
+            }
+
             //file:///C:/Users/orbis.luminate/Documents/Visual%20Studio%202015/Projects/overdriveoverlay.html?service=https://ofs-60631275ab0144a6f227269b847f2406.read.overdrive.com/?p=ijC6_T7te24rY8z2iCRKbg
         }());
     </script>
