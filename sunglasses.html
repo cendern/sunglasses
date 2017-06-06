@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <style>
+        div body {
+            overflow:hidden;
+        }
+        body {
+            margin-bottom: 0px;
+            margin-top: 0px;
+            margin-left: 0px;
+            margin-right: 0px;
+        }
+        div#content{
+            margin-top:-4px;
+        }
+        iframe {
+            border-width: 0px;
+            height: 100vh;
+            width: 100vw;
+        }
+        #sunglasses {
+          pointer-events: none;
+          position:absolute;
+          width:100vw;
+          height:100vh;
+          top:0px;
+          background:#000;
+          opacity: .5;
+        }
+        #content:-webkit-full-screen {
+          width: 100%;
+          height: 100%;
+        }
+        #goFS{
+            position:absolute;
+            top:10px;
+            left:10px;
+        }
+    </style>
+</head>
+<body allowfullscreen>
+    <div id="content" allowfullscreen></div>
+    <div id="sunglasses"></div>
+    <button id="goFS">Go fullscreen</button>
+    <script>
+        (function () {
+            function readQueryString() {
+                //Parse the GET string
+                var $_GET = {};
+                var searchVar = document.location.search;
+                //unescaped '#' breaks this parsing scheme
+                searchVar = searchVar.replace('/#/g', '%23');
+
+                searchVar.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
+                    function decode(s) {
+                        return decodeURIComponent(s.split("+").join(" "));
+                    }
+
+                    $_GET[decode(arguments[1])] = decode(arguments[2]);
+                });
+                return $_GET;
+            }
+            //iframe the specified URL
+            var q = readQueryString();
+            var i = document.createElement('iframe');
+            i.src = q.service;
+            i.allowfullscreen = true;
+            var c = document.getElementById('content');
+            c.appendChild(i);
+
+            var goFS = document.getElementById("goFS");
+            goFS.addEventListener("click", function () {
+                toggleFullScreen();
+                goFS.style.display = "none";
+            }, false);
+            //set the desired opacity for the sunglasses
+            if (q.hasOwnProperty('opacity'))
+                document.getElementById('sunglasses').style.opacity = q.opacity;
+
+            function toggleFullScreen() {
+                var doc = window.document;
+                var docEl = doc.documentElement;
+
+                var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+                var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+                if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                    requestFullScreen.call(docEl);
+                }
+                else {
+                    cancelFullScreen.call(doc);
+                }
+            }
+            //file:///C:/Users/orbis.luminate/Documents/Visual%20Studio%202015/Projects/overdriveoverlay.html?service=https://ofs-60631275ab0144a6f227269b847f2406.read.overdrive.com/?p=ijC6_T7te24rY8z2iCRKbg
+        }());
+    </script>
+</body>
+</html>
