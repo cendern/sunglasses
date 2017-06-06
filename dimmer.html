@@ -14,16 +14,18 @@
             margin-top: 0px;
             margin-left: 0px;
             margin-right: 0px;
+            height:100vh;
         }
         div#content{
-            margin-top:-4px;
+            margin-bottom:-4px;
         }
         iframe {
             border-width: 0px;
             height: 100vh;
             width: 100vw;
+            z-index:0;
         }
-        #sunglasses {
+        #dimmer {
           pointer-events: none;
           position:absolute;
           width:100vw;
@@ -31,22 +33,74 @@
           top:0px;
           background:#000;
           opacity: .5;
+          z-index:10;
         }
+
         #content:-webkit-full-screen {
           width: 100%;
           height: 100%;
         }
-        #goFS{
+        #fullScreenDragContainer{
             position:absolute;
             top:10px;
             left:10px;
+            opacity: 0.8;
+            z-index:11;
         }
+
+        /*https://stackoverflow.com/questions/13526712/make-div-draggable-using-css*/
+        [draggable=true] {
+            cursor: move;
+        }
+        /*.dragHandle {
+            background-image:url('https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg');
+            background-repeat:no-repeat;
+            background-position:left;
+        }*/
+        #sliderDragContainer {
+            position:absolute;
+            top:50px;
+            left:50px;
+            opacity: 0.8;
+            z-index:11;
+            /*width:50px;*/
+            transform: rotate(90deg);
+            -moz-transform: rotate(90deg); /*do same for other browsers if required*/
+        }
+        /*https://stackoverflow.com/questions/15935837/how-to-display-a-range-input-slider-vertically*/
+        /*.vranger {
+            transform: rotate(90deg);
+            -moz-transform: rotate(90deg); /*do same for other browsers if required
+            opacity: 0.8;
+        }*/
+        /*input[type="range"] {
+           position: absolute;
+           top: 40%;
+           transform: rotate(270deg);
+        }*/
+        .center {
+            margin-top:50vh;
+            margin-left:50vw;
+        }
+        .horizontal{
+            /*display:inline;*/
+            display:block;
+            float:left;
+        }
+
     </style>
 </head>
 <body allowfullscreen>
     <div id="content" allowfullscreen></div>
-    <div id="sunglasses"></div>
-    <button id="goFS">Go fullscreen</button>
+    <div id="dimmer"></div>
+    <div draggable="true" id="fullScreenDragContainer">
+        <img class="horizontal" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg" />
+        <button class="horizontal" id="goFS">Go fullscreen</button>
+    </div>
+    <div draggable="true" id="sliderDragContainer">
+        <img class="horizontal" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Move_icon.svg" />
+        <input class="horizontal" id="dimmerSlider" type="range" class="vranger" />
+    </div>
     <script>
         (function () {
             function readQueryString() {
@@ -85,29 +139,81 @@
                 var goFS = document.getElementById("goFS");
                 goFS.addEventListener("click", function () {
                     toggleFullScreen();
-                    goFS.style.display = "none";
+                    //goFS.style.display = "none";
                 }, false);
             } else {
                 c.innerHTML = "Please add '?url=' followed by a URL to the end"+
-                    " of the current URL." +
-                    " You may also specify the opacity. Opacity is how dark "+
-                    "your sunglasses "+
-                    " should be as a decimal number with 0.0 being "+
-                    " totally clear and 1.0 being completely black."
-                //eventually just put input fields here
+                    " of the current URL to view that URL with site-dimmer." +
+                    "<br>You may also specify how much you would like to dim the "+
+                    "screen as a percentage."+
+                    "<br>Add 'dim=60' to reduce the light level by 60%."
+                var form = document.createElement('form');
+                form.method = "GET";
+                form.action = ".";
+                var urlInput = document.createElement('input');
+                urlInput.type = 'url';
+                urlInput.class = "center";
+                urlInput.placeholder = "Enter your URL here";
+                form.appendChild(urlInput);
+                document.body.appendChild(form);
+            }
+            //set the desired darkness for the dimmer
+            if (q.hasOwnProperty('dim'))
+                document.getElementById('dimmer').style.opacity = q.opacity / 100;
+
+            //Make a floating, moveable, tiny vertical slider for opacity here.
+            var dimmerSlider = document.getElementById('dimmerSlider');
+            //Give it an intial value reflecting the current dim level
+            dimmerSlider.value = document.getElementById('dimmer').style.opacity * 100;
+            //Changing the dimmer level changes brightness
+            dimmerSlider.onchange = function () {
+                document.getElementById('dimmer').style.opacity = dimmerSlider.value / 100;
+            };
+
+            function dragstart_handler(ev) {
+                // Set the drag effect to copy
+                ev.dataTransfer.dropEffect = "move";
+
+                var style = window.getComputedStyle(event.currentTarget, null);
+                var dataToPass = JSON.stringify({
+                    left: parseInt(style.getPropertyValue("left"), 10) - event.clientX,
+                    top: parseInt(style.getPropertyValue("top"), 10) - event.clientY,
+                    id: event.currentTarget.id
+                });
+                // Add the drag data
+                event.dataTransfer.setData("text/json",dataToPass);
             }
 
-            //set the desired opacity for the sunglasses
-            if (q.hasOwnProperty('opacity'))
-                document.getElementById('sunglasses').style.opacity = q.opacity;
+            function dragover_handler(ev) {
+                ev.preventDefault();
+                // Set the dropEffect to move
+                ev.dataTransfer.dropEffect = "move";
+            }
+            function drop_handler(ev) {
+                ev.preventDefault();
+                // Get the id of the target and add the moved element to the target's DOM
+                var data = JSON.parse(ev.dataTransfer.getData("text/json"));
+                dm = document.getElementById(data.id);
+                dm.style.left = (ev.clientX + parseInt(data.left, 10)) + 'px';
+                dm.style.top = (ev.clientY + parseInt(data.top, 10)) + 'px';
+                return false;
+            }
+            document.querySelectorAll('[draggable]').forEach(function (draggableEl) {
+                draggableEl.addEventListener('dragstart', dragstart_handler, false);
+            });
+            document.body.addEventListener('dragover', dragover_handler, false);
+            document.body.addEventListener('drop', drop_handler, false);
+            document.getElementById('dimmer').addEventListener('dragover', dragover_handler, false);
+            document.getElementById('dimmer').addEventListener('drop', drop_handler, false);
+            document.getElementById('content').addEventListener('dragover', dragover_handler, false);
+            //document.getElementById('content').addEventListener('drop', drop_handler, false);
+
 
             function toggleFullScreen() {
                 var doc = window.document;
                 var docEl = doc.documentElement;
-
                 var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
                 var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
                 if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
                     requestFullScreen.call(docEl);
                 }
