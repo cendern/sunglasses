@@ -218,7 +218,14 @@
                 i.src = framedUrl;
                 i.allowfullscreen = true;
                 i.textContent = "Looks like this didn't load properly. Some sites don't allow themselves to be presented in an iframe which prevents website-dimmer from working.";
-                testIframe(i, c);
+                c.appendChild(i);
+                //testIframe(i, c);
+                //x-frame-options detection was a total bust, just provide a link
+                // in the side-menu.
+                var a = document.createElement('a');
+                a.textContent = "Click here to visit " + q.url + " without site-dimmer";
+                a.href = q.url;
+                document.getElementById('mySidenav').appendChild(a);
 
                 var goFS = document.getElementById("goFS");
                 goFS.addEventListener("click", function () {
@@ -301,30 +308,12 @@
             //Guess whether iframe loaded or not.
             function testIframe(iframe, appendTo) {
                 var timepast = false;
-                var errorElement = document.createElement('p');
 
                 // If more then 500ms past that means a page is loading inside the iFrame
-                setTimeout(function () {
+                var theTimer = setTimeout(function () {
                     timepast = true;
-                    try { iframe.contentDocument; } catch (e) {
-                        //Chrome throws this error:
-                        //DOMException: Failed to read the 'contentDocument' property from 'HTMLIFrameElement': Blocked a frame with origin "null" from accessing a cross-origin frame.
-                        if (e.toString().indexOf("from accessing a cross-origin frame") > -1) {
-                            errorElement.style.zIndex = 11;
-                            errorElement.className = "errorMsg";
-                            errorElement.textContent = "Darn! Looks like this site may be using some settings that are incompatible with website-dimmer. (Likely set \"X-Frame-Options sameorigin\")";
-                            errorElement.appendChild(document.createElement('br'));
-                            var a = document.createElement('a');
-                            a.textContent = "Click here to visit " + q.url + " without site-dimmer";
-                            a.href = q.url;
-                            errorElement.appendChild(a);
-                            //append as first child
-                            var eElement = document.body;
-                            eElement.insertBefore(errorElement, eElement.firstChild);
-                        }
-                        console.log(e);
-                    }
-                }, 1000);
+                }
+                , 500);
 
                 if (iframe.attachEvent) {
                     iframe.attachEvent("onload", function () {
@@ -332,8 +321,8 @@
                             console.log("It's PROBABLY OK");
                         }
                         else {
-                            console.log("It's PROBABLY NOT OK");
-                            try { iframe.contentDocument; } catch (e) { console.log(e);}
+                            console.log("It failed really fast, it's PROBABLY NOT OK");
+                            displayError();
                         }
                     });
                 }
@@ -344,12 +333,27 @@
                             console.log("It's PROBABLY OK");
                         }
                         else {
-                            console.log("It's PROBABLY NOT OK");
-                            try { iframe.contentDocument; } catch (e) { console.log(e); }
+                            console.log("It failed really fast, it's PROBABLY NOT OK");
+                            displayError();
                         }
                     };
                 }
                 appendTo.appendChild(iframe);
+            }
+
+            function displayError() {
+                var errorElement = document.createElement('p');
+                errorElement.style.zIndex = 11;
+                errorElement.className = "errorMsg";
+                errorElement.textContent = "Darn! Looks like this site may be using some settings that are incompatible with website-dimmer, or it may just be a bad URL. If you've got another error message lower down on the page, the URL was probably bad. Otherwise it's probably a setting on the website you wanted to view (Likely \"X-Frame-Options sameorigin\"). Nothing we can do about that, but you might try it without website-dimmer.";
+                errorElement.appendChild(document.createElement('br'));
+                var a = document.createElement('a');
+                a.textContent = "Click here to visit " + q.url + " without site-dimmer";
+                a.href = q.url;
+                errorElement.appendChild(a);
+                //append as first child
+                var eElement = document.body;
+                eElement.insertBefore(errorElement, eElement.firstChild);
             }
 
             //file:///C:/Users/orbis.luminate/Documents/Visual%20Studio%202015/Projects/overdriveoverlay.html?service=https://ofs-60631275ab0144a6f227269b847f2406.read.overdrive.com/?p=ijC6_T7te24rY8z2iCRKbg
